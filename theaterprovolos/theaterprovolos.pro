@@ -28,7 +28,8 @@ SOURCES += \
     texture2d.cpp \
     resource_manager.cpp \
     game_object.cpp \
-    sprite_renderer.cpp
+    sprite_renderer.cpp \
+    ball_object.cpp
 
 LIBS += -lGL -lglfw -lGLEW -lGLU  -lX11 -lpthread -lXrandr -lXi -ldl -lSOIL
 
@@ -45,7 +46,8 @@ HEADERS += \
     texture2d.h \
     resource_manager.h \
     game_object.h \
-    sprite_renderer.h
+    sprite_renderer.h \
+    ball_object.h
 
 DISTFILES += \
     res/particle.frag \

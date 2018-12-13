@@ -11,6 +11,7 @@
 #include "game.h"
 #include "resource_manager.h"
 #include "particle_generator.h"
+#include "sprite_renderer.h"
 
 Game::Game(GLuint width, GLuint height)
     : State(GAME_ACTIVE), Keys(), Width(width), Height(height)
@@ -23,10 +24,22 @@ Game::~Game()
 
 }
 
+SpriteRenderer  *Renderer;
 ParticleGenerator   *Particles;
 
 void Game::Init()
 {
+    ResourceManager::LoadShader("shaders/sprite.vs", "shaders/sprite.frag", nullptr, "sprite");
+    // Configure shaders
+    glm::mat4 projection = glm::ortho(0.0f, static_cast<GLfloat>(this->Width),
+    static_cast<GLfloat>(this->Height), 0.0f, -1.0f, 1.0f);
+    ResourceManager::GetShader("sprite").Use().SetInteger("image", 0);
+    ResourceManager::GetShader("sprite").SetMatrix4("projection", projection);
+    // Set render-specific controls
+    Shader shsprite = ResourceManager::GetShader("sprite");
+    Renderer = new SpriteRenderer(shsprite);
+    // Load textures
+    ResourceManager::LoadTexture("textures/awesomeface.png", GL_TRUE, "face");
 
 
     ResourceManager::LoadShader("res/particle.vs", "res/particle.frag", nullptr,"particle");
@@ -51,7 +64,7 @@ void Game::Update(GLfloat dt)
 
 int Radius = 10;
     // Update particles
-    Particles->Update(dt, *Ball, 2, glm::vec2(Radius / 2));
+  //  Particles->Update(dt, *Ball, 2, glm::vec2(Radius / 2));
 }
 
 
@@ -62,10 +75,14 @@ void Game::ProcessInput(GLfloat dt)
 
 void Game::Render()
 {
+     Texture2D txface = ResourceManager::GetTexture("face");
+
+    Renderer->DrawSprite(txface,
+           glm::vec2(200, 200), glm::vec2(300, 400), 45.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 
     if (this->State == GAME_ACTIVE)
        {
-           [...]
+
            // Draw player
            //Player->Draw(*Renderer);
            // Draw particles
