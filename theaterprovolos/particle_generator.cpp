@@ -1,4 +1,3 @@
-
 /*******************************************************************
 ** This code is part of Breakout.
 **
@@ -15,7 +14,7 @@ ParticleGenerator::ParticleGenerator(Shader shader, Texture2D texture, GLuint am
     this->init();
 }
 
-void ParticleGenerator::Update(GLfloat dt, Game &object, GLuint newParticles, glm::vec2 offset)
+void ParticleGenerator::Update(GLfloat dt, GameObject &object, GLuint newParticles, glm::vec2 offset)
 {
     // Add new particles
     for (GLuint i = 0; i < newParticles; ++i)
@@ -110,7 +109,7 @@ GLuint ParticleGenerator::firstUnusedParticle()
     return 0;
 }
 
-void ParticleGenerator::respawnParticle(Particle &particle, Game &object, glm::vec2 offset)
+void ParticleGenerator::respawnParticle(Particle &particle, GameObject &object, glm::vec2 offset)
 {
     GLfloat random = ((rand() % 100) - 50) / 10.0f;
     GLfloat rColor = 0.5 + ((rand() % 100) / 100.0f);

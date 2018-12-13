@@ -2,6 +2,7 @@
 ### sudo apt-get install libglfw3-dev libglfw3
 ### sudo apt-get install libglew-dev
 ### sudo apt-get install libglm-dev
+### sudo apt-get install libsoil-dev
 QT -= gui
 
 CONFIG += c++11 console
@@ -25,9 +26,11 @@ SOURCES += \
     game.cpp \
     shader.cpp \
     texture2d.cpp \
-    resource_manager.cpp
+    resource_manager.cpp \
+    game_object.cpp \
+    sprite_renderer.cpp
 
-LIBS += -lGL -lglfw3 -lGL -lX11 -lpthread -lXrandr -lXi -ldl
+LIBS += -lGL -lglfw -lGLEW -lGLU  -lX11 -lpthread -lXrandr -lXi -ldl -lSOIL
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -40,4 +43,6 @@ HEADERS += \
     game.h \
     shader.h \
     texture2d.h \
-    resource_manager.h
+    resource_manager.h \
+    game_object.h \
+    sprite_renderer.h
