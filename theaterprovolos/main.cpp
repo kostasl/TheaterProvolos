@@ -66,6 +66,8 @@ int main(int argc, char *argv[])
     GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Breakout", nullptr, nullptr);
     glfwMakeContextCurrent(window);
 
+    //glfwSwapInterval(1); //KL
+
     glewExperimental = GL_TRUE;
     glewInit();
     glGetError(); // Call it once to catch glewInit() bug, all other errors are now from our application.
@@ -74,9 +76,10 @@ int main(int argc, char *argv[])
 
     // OpenGL configuration
     glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    //glEnable(GL_CULL_FACE);
+    //glEnable(GL_BLEND);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Initialize game
     Breakout.Init();
@@ -104,11 +107,15 @@ int main(int argc, char *argv[])
         Breakout.Update(deltaTime);
 
         // Render
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+
+        glColor3f(1.0f, 0.2f, 0.2f);
+        glRectf(10, 190, 10 + 100, 290);
 
         Breakout.Render();
 
+        //glutSwapBuffers();
         glfwSwapBuffers(window);
     }
 

@@ -34,6 +34,8 @@ Shader ResourceManager::GetShader(std::string name)
 
 Texture2D ResourceManager::LoadTexture(const GLchar *file, GLboolean alpha, std::string name)
 {
+
+    std::cout << file << std::endl;
     Textures[name] = loadTextureFromFile(file, alpha);
     return Textures[name];
 }
@@ -108,7 +110,11 @@ Texture2D ResourceManager::loadTextureFromFile(const GLchar *file, GLboolean alp
     }
     // Load image
     int width, height;
-    unsigned char* image = SOIL_load_image(file, &width, &height, 0, texture.Image_Format == GL_RGBA ? SOIL_LOAD_RGBA : SOIL_LOAD_RGB);
+    unsigned char* image = SOIL_load_image("/home/kostasl/workspace/TheaterProvolos/theaterprovolos/res/textures/awesomeface.png", &width, &height, 0, texture.Image_Format == GL_RGBA ? SOIL_LOAD_RGBA : SOIL_LOAD_RGB);
+
+    if (image == 0)
+        std::cerr << "SOIL loading error: '" << file << std::endl;
+
     // Now generate texture
     texture.Generate(width, height, image);
     // And finally free image data
