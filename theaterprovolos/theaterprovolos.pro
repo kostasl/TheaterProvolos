@@ -46,3 +46,9 @@ HEADERS += \
     resource_manager.h \
     game_object.h \
     sprite_renderer.h
+
+DISTFILES += \
+    res/particle.frag \
+    res/particle.vs \
+    res/sprite.vs \
+    res/sprite.frag

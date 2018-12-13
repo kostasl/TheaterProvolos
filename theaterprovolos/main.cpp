@@ -1,4 +1,11 @@
-
+/// \title theaterprovolos an augmented reality for a fun onstage perfomance
+/// made for 1028 Xmas party as KCL, CDN Meyer Lab's.
+/// It takes images from a camera, and augments them with graphics - We are trying to
+/// show off our mutants superpowers - Its all science fiction until someone makes it a reality
+///
+///I used the breakout game as base from which to create OpenGL sprites and graphics
+/// OpenCV is used to obtain and track an actors motion
+/// \author Kostas Lagogiannis 2018
 
 
 /*******************************************************************
@@ -11,7 +18,15 @@
 ** it under the terms of the CC BY 4.0 license as published by
 ** Creative Commons, either version 4 of the License, or (at your
 ** option) any later version.
+**
+**
+**
 ******************************************************************/
+/// \notes Then it should be a matter of rendering some rectangle or a box (or whatever you wish to locate using OpenCV) -
+/// there are plenty of tutorials for that, and then copying the rendered data using the glReadPixels()
+/// function to client memory and passing that to OpenCV
+///
+///
 #include <QCoreApplication>
 
 
@@ -32,6 +47,8 @@ const GLuint SCREEN_WIDTH = 800;
 const GLuint SCREEN_HEIGHT = 600;
 
 Game Breakout (SCREEN_WIDTH, SCREEN_HEIGHT);
+
+
 
 int main(int argc, char *argv[])
 {
@@ -89,6 +106,7 @@ int main(int argc, char *argv[])
         // Render
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+
         Breakout.Render();
 
         glfwSwapBuffers(window);
