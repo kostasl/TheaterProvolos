@@ -14,12 +14,13 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         main.cpp \
-    glad.c
+    glad.c \
+    show_video_opengl.cpp
 
 RESOURCES += qml.qrc
 
 LIBS += -lGL -lglfw -lGLEW -lGLU  -lX11 -lpthread -lXrandr -lXi -ldl -lSOIL
-
+LIBS += `pkg-config opencv --libs`
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =

@@ -37,6 +37,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+
+#include <opencv2/opencv.hpp>
+
 static const struct
 {
     float x, y;
@@ -136,7 +139,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
         glfwSetWindowShouldClose(window, GLFW_TRUE);
 }
 
-int main(void)
+int main2(void)
 {
     int  success;
     char infoLog[512];

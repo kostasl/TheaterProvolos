@@ -32,6 +32,8 @@ SOURCES += \
     ball_object.cpp
 
 LIBS += -lGL -lglfw -lGLEW -lGLU  -lX11 -lpthread -lXrandr -lXi -ldl -lSOIL
+LIBS += `pkg-config opencv --libs`
+
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

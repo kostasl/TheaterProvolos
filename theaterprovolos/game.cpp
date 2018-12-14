@@ -36,7 +36,6 @@ Game::Game(GLuint width, GLuint height)
 void Game::Init()
 {
 
-       Ball = new BallObject();
     // Load shaders
        ResourceManager::LoadShader("/home/kostasl/workspace/TheaterProvolos/theaterprovolos/res/sprite.vs", "/home/kostasl/workspace/TheaterProvolos/theaterprovolos/res/sprite.frag", nullptr, "sprite");
        // Configure shaders
@@ -45,20 +44,21 @@ void Game::Init()
        ResourceManager::GetShader("sprite").SetMatrix4("projection", projection);
        // Load textures
        ResourceManager::LoadTexture("/home/kostasl/workspace/TheaterProvolos/theaterprovolos/res/textures/awesomeface.png", GL_TRUE, "face");
+
        // Set render-specific controls
        Shader shsprite = ResourceManager::GetShader("sprite");
+
        Renderer = new SpriteRenderer(shsprite);
 
-    ////
 
-// PARTICLES //
+       ResourceManager::LoadShader("/home/kostasl/workspace/TheaterProvolos/theaterprovolos/res/particle.vs", "/home/kostasl/workspace/TheaterProvolos/theaterprovolos/res/particle.frag", nullptr,"particle");
+       ResourceManager::LoadTexture("/home/kostasl/workspace/TheaterProvolos/theaterprovolos/res/textures/particle.png", GL_TRUE, "particle");
+       Shader shparticle = ResourceManager::GetShader("particle");
 
-      ResourceManager::LoadShader("/home/kostasl/workspace/TheaterProvolos/theaterprovolos/res/particle.vs", "/home/kostasl/workspace/TheaterProvolos/theaterprovolos/res/particle.frag", nullptr,"particle");
-      ResourceManager::LoadTexture("/home/kostasl/workspace/TheaterProvolos/theaterprovolos/res/textures/particle.png", GL_TRUE, "particle");
+/// PARTICLES //
+
 
 //    // Set render-specific controls
-//    Shader shsprite = ResourceManager::GetShader("sprite");
-//    Renderer = new SpriteRenderer(shsprite);
 //    // Load textures
     GLuint nr_particles = 500;
     std::vector<Particle> particles;
@@ -66,11 +66,21 @@ void Game::Init()
     for (GLuint i = 0; i < nr_particles; ++i)
         particles.push_back(Particle());
 
+
+    Texture2D txpart = ResourceManager::GetTexture("particle");
     Particles = new ParticleGenerator(
-           ResourceManager::GetShader("particle"),
-           ResourceManager::GetTexture("particle"),
+       shparticle,
+           txpart,
            500
        );
+
+
+//    /// BALL //
+    Texture2D txface = ResourceManager::GetTexture("face");
+    glm::vec2 ballPos = glm::vec2(50.0f,50.0f) + glm::vec2(50 / 2 - BALL_RADIUS, -BALL_RADIUS * 2);
+        Ball = new BallObject(ballPos, BALL_RADIUS, INITIAL_BALL_VELOCITY,
+            txface);
+
 
 }
 
@@ -79,7 +89,7 @@ void Game::Update(GLfloat dt)
 
 int Radius = 10;
     // Update particles
-    //Particles->Update(dt, *Ball, 2, glm::vec2(Radius / 2));
+    Particles->Update(dt, *Ball, 2, glm::vec2(Radius / 2));
        Particles->Update(dt, *Ball, 2, glm::vec2(Ball->Radius / 2));
 }
 
@@ -91,20 +101,30 @@ void Game::ProcessInput(GLfloat dt)
 
 void Game::Render()
 {
-     Texture2D txface = ResourceManager::GetTexture("face");
 
-    Renderer->DrawSprite(txface,
-           glm::vec2(200, 200), glm::vec2(300, 400), 45.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 
-//    if (this->State == GAME_ACTIVE)      {
+    Texture2D txface = ResourceManager::GetTexture("face");
+
+     Renderer->DrawSprite(txface,
+             glm::vec2(50, 50), glm::vec2(200, 200), 45.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+
+     Texture2D txpart = ResourceManager::GetTexture("particle");
+
+     Renderer->DrawSprite(txpart,
+            glm::vec2(80, 100), glm::vec2(120, 120), 5.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+
+    //    if (this->State == GAME_ACTIVE)      {
 
            // Draw player
             //Player->Draw(*Renderer);
+
 //           // Draw particles
            Particles->Draw();
 //           // Draw ball
-           Ball->Draw(*Renderer);
+          // Ball->Draw(*Renderer);
 //       }
+
+
 
 }
 

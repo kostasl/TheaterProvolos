@@ -110,7 +110,8 @@ Texture2D ResourceManager::loadTextureFromFile(const GLchar *file, GLboolean alp
     }
     // Load image
     int width, height;
-    unsigned char* image = SOIL_load_image("/home/kostasl/workspace/TheaterProvolos/theaterprovolos/res/textures/awesomeface.png", &width, &height, 0, texture.Image_Format == GL_RGBA ? SOIL_LOAD_RGBA : SOIL_LOAD_RGB);
+    std::cout << "Loading Resource " << file << std::endl;
+    unsigned char* image = SOIL_load_image((const char*)file, &width, &height, 0, texture.Image_Format == GL_RGBA ? SOIL_LOAD_RGBA : SOIL_LOAD_RGB);
 
     if (image == 0)
         std::cerr << "SOIL loading error: '" << file << std::endl;
