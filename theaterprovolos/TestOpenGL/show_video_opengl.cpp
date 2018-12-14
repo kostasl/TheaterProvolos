@@ -284,10 +284,11 @@ int main(int argc, char **argv)
         float alpha = 0.8;
         float beta = ( 1.0 - alpha );
 
-        frame_GFP_mask_col.setTo(cv::Scalar(0,0,250,100),frame_GFP_mask);
 
+
+        frame_GFP_mask_col.setTo(cv::Scalar(0,0,250,100),frame_GFP_mask);
         //cv::addWeighted(frame_GFP_mask_col,alpha,frame_GFP_mask_col,beta,0.0,frame_GFP_mask_col);
-        frame_GFP_mask_col_acc = frame_GFP_mask_col_acc*0.985+ frame_GFP_mask_col;
+        frame_GFP_mask_col_acc = frame_GFP_mask_col_acc*0.97+ frame_GFP_mask_col;
        // cv::accumulate(frame_GFP_mask_col,frame_GFP_mask_col_acc);
 
         //cv::accumulate(frame_GFP_mask_col,frame_GFP_mask_col);
