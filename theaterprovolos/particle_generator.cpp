@@ -113,8 +113,10 @@ void ParticleGenerator::respawnParticle(Particle &particle, GameObject &object, 
 {
     GLfloat random = ((rand() % 100) - 50) / 10.0f;
     GLfloat rColor = 0.5 + ((rand() % 100) / 100.0f);
-    particle.Position = object.Position + random + offset;
+    //particle.Position = object.Position + random + offset;
+    particle.Position = glm::vec2(0.0f,0.0f) + random + offset;
     particle.Color = glm::vec4(rColor, rColor, rColor, 1.0f);
     particle.Life = 1.0f;
-    particle.Velocity = object.Velocity * 0.1f;
+    //particle.Velocity = object.Velocity * 0.1f;
+    particle.Velocity = glm::vec2(0.5f,0.0f) * 0.1f;
 }
