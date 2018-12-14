@@ -174,7 +174,8 @@ int main(int argc, char **argv)
    // }
 
     //cv::VideoCapture capture(argv[1]);
-    cv::VideoCapture capture(0);
+    //cv::VideoCapture capture(0);
+    cv::VideoCapture capture("/home/kostasl/nextcloud/tomFlu.mp4");
     if (!capture.isOpened()) {
         cout << "Cannot open video: " << argv[1] << endl;
         exit(EXIT_FAILURE);
@@ -241,7 +242,8 @@ int main(int argc, char **argv)
     pMOG2->setBackgroundRatio(gdMOGBGRatio); ///
 
     cv::Mat frame_live,frame_live_prev,frame_MOG,frame_out;
-    cv::Mat frame_live_grey,frame_live_prev_grey,frame_OptFlow;
+    cv::Mat frame_live_grey,frame_live_prev_grey,frame_OptFlow,frame_out_HSV;
+    cv::Mat frame_GFP_mask,frame_GFP_mask_col;
     std::vector<cv::KeyPoint> vKpt_next;
     std::vector<cv::Point2f> vpt_next,vpt_current,vpt_motion;
     std::vector<uchar> voutStatus;
@@ -258,7 +260,7 @@ int main(int argc, char **argv)
         }
 
 
-        //pMOG2->apply(frame_live,frame_MOG,0.05);
+        pMOG2->apply(frame_live,frame_MOG,0.05);
         video_end_time = glfwGetTime();
 
         //if (frame_MOG.depth() != CV_8U)
@@ -266,8 +268,26 @@ int main(int argc, char **argv)
         //else
         //    frame_MOG.copyTo(frame_out);
 
+        cv::cvtColor( frame_live, frame_out_HSV, cv::COLOR_BGR2HSV );
+        cv::inRange(frame_out_HSV,cv::Scalar(50,0,170,0),cv::Scalar(140,255,255),frame_GFP_mask);
+
+        cv::cvtColor( frame_GFP_mask, frame_GFP_mask_col, cv::COLOR_GRAY2BGR );
+        cv::Mat frame_red;
+
+        cv::bitwise_and(frame_MOG,frame_GFP_mask,frame_GFP_mask);
+        frame_GFP_mask_col.setTo(cv::Scalar(0,0,250,100),frame_GFP_mask);
+
+
+
+        //frame_out.copyTo(frame_out,frame_GFP_mask)
+        //frame_GFP_mask.copyTo();
+
+        float alpha = 0.5;
+        float beta = ( 1.0 - alpha );
+        cv::addWeighted( frame_GFP_mask_col, alpha, frame_live, beta, 0.0, frame_out);
+
         //frame_live.copyTo(frame_out,frame_MOG);
-        frame_live.copyTo(frame_out);
+        //frame_live.copyTo(frame_out);
 
         //Calc Optic Flow for each food item
         if (frame_count > MOGhistory)
@@ -282,31 +302,31 @@ int main(int argc, char **argv)
 //            cv::KeyPoint::convert(vpt_motion,vKpt_next);
 //            cv::drawKeypoints(frame_out,vKpt_next,frame_out,CV_RGB(255,30,30),cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
 
+            /////Diffusive Optic Flow -- Big Lag
+//            cv::cvtColor( frame_live, frame_live_grey, cv::COLOR_BGR2GRAY );
+//            cv::cvtColor( frame_live_prev, frame_live_prev_grey, cv::COLOR_BGR2GRAY );
+//            //img2.copyTo(img2OriginalC);
+//             cv::calcOpticalFlowFarneback(frame_live_grey, frame_live_prev_grey, frame_OptFlow, .5, 1, 50, 1, 3, 1.2, 0);
 
-            cv::cvtColor( frame_live, frame_live_grey, cv::COLOR_BGR2GRAY );
-            cv::cvtColor( frame_live_prev, frame_live_prev_grey, cv::COLOR_BGR2GRAY );
-            //img2.copyTo(img2OriginalC);
-             cv::calcOpticalFlowFarneback(frame_live_grey, frame_live_prev_grey, frame_OptFlow, .5, 1, 50, 1, 3, 1.2, 0);
+//             for (int y = 0; y < frame_live_prev_grey.rows; y += 50) {
+//                         for (int x = 0; x < frame_live_prev_grey.cols; x += 50)
+//                         {
+//                             // get the flow from y, x position * 3 for better visibility
+//                             const cv::Point2f flowatxy = frame_OptFlow.at<cv::Point2f>(y, x) *10;
+//                             // draw line at flow direction
+//                             if (cv::norm(flowatxy) > 10 ){
+//                                 int colRedShift = rng.uniform(100, new_min(100,new_min((int)cv::norm(flowatxy), 200)) );
+//                                 int colRadShift = rng.uniform(3, new_min((int)cv::norm(flowatxy)/2, 10) );
 
-             for (int y = 0; y < frame_live_prev_grey.rows; y += 50) {
-                         for (int x = 0; x < frame_live_prev_grey.cols; x += 50)
-                         {
-                             // get the flow from y, x position * 3 for better visibility
-                             const cv::Point2f flowatxy = frame_OptFlow.at<cv::Point2f>(y, x) *10;
-                             // draw line at flow direction
-                             if (cv::norm(flowatxy) > 20 ){
-                                 int colRedShift = rng.uniform(100, new_min(100,new_min((int)cv::norm(flowatxy), 200)) );
-                                 int colRadShift = rng.uniform(3, new_min((int)cv::norm(flowatxy)/2, 10) );
+//                                    cv::arrowedLine(frame_out, cv::Point(x, y),
+//                                                    cv::Point(cvRound(x + flowatxy.x), cvRound(y + flowatxy.y)),
+//                                                    cv::Scalar(0, 50, 55+colRedShift,50),4);
+//                                    // draw initial point
 
-                                    cv::arrowedLine(frame_out, cv::Point(x, y),
-                                                    cv::Point(cvRound(x + flowatxy.x), cvRound(y + flowatxy.y)),
-                                                    cv::Scalar(0, 50, 55+colRedShift,50),4);
-                                    // draw initial point
-
-                                    cv::circle(frame_out, cv::Point(x, y), colRadShift, cv::Scalar(0, 30, 55+colRedShift,30), -1);
-                                }
-                         }
-               }
+//                                    cv::circle(frame_out, cv::Point(x, y), colRadShift, cv::Scalar(0, 30, 55+colRedShift,30), -1);
+//                                }
+//                         }
+//               }
 
 
             //Update the optic flow key points
