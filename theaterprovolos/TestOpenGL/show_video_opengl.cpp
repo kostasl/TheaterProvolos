@@ -174,8 +174,8 @@ int main(int argc, char **argv)
    // }
 
     //cv::VideoCapture capture(argv[1]);
-    //cv::VideoCapture capture(0);
-    cv::VideoCapture capture("/home/kostasl/nextcloud/tomFlu.mp4");
+    cv::VideoCapture capture(0);
+    //cv::VideoCapture capture("/home/kostasl/nextcloud/tomFlu.mp4");
     if (!capture.isOpened()) {
         cout << "Cannot open video: " << argv[1] << endl;
         exit(EXIT_FAILURE);
@@ -243,7 +243,8 @@ int main(int argc, char **argv)
 
     cv::Mat frame_live,frame_live_prev,frame_MOG,frame_out;
     cv::Mat frame_live_grey,frame_live_prev_grey,frame_OptFlow,frame_out_HSV;
-    cv::Mat frame_GFP_mask,frame_GFP_mask_col;
+    cv::Mat frame_GFP_mask,frame_GFP_mask_col,frame_GFP_mask_col_acc;
+
     std::vector<cv::KeyPoint> vKpt_next;
     std::vector<cv::Point2f> vpt_next,vpt_current,vpt_motion;
     std::vector<uchar> voutStatus;
@@ -260,6 +261,7 @@ int main(int argc, char **argv)
         }
 
 
+
         pMOG2->apply(frame_live,frame_MOG,0.05);
         video_end_time = glfwGetTime();
 
@@ -269,22 +271,34 @@ int main(int argc, char **argv)
         //    frame_MOG.copyTo(frame_out);
 
         cv::cvtColor( frame_live, frame_out_HSV, cv::COLOR_BGR2HSV );
-        cv::inRange(frame_out_HSV,cv::Scalar(50,0,170,0),cv::Scalar(140,255,255),frame_GFP_mask);
+        cv::inRange(frame_out_HSV,cv::Scalar(50,0,170,0),cv::Scalar(150,255,255),frame_GFP_mask);
 
-        cv::cvtColor( frame_GFP_mask, frame_GFP_mask_col, cv::COLOR_GRAY2BGR );
-        cv::Mat frame_red;
 
         cv::bitwise_and(frame_MOG,frame_GFP_mask,frame_GFP_mask);
+        cv::cvtColor( frame_GFP_mask, frame_GFP_mask_col, cv::COLOR_GRAY2BGR );
+
+        if (frame_GFP_mask_col_acc.empty())
+            frame_GFP_mask_col_acc = cv::Mat::zeros(frame_GFP_mask_col.rows,frame_GFP_mask_col.cols,frame_GFP_mask_col.type() );
+
+
+        float alpha = 0.8;
+        float beta = ( 1.0 - alpha );
+
         frame_GFP_mask_col.setTo(cv::Scalar(0,0,250,100),frame_GFP_mask);
+
+        //cv::addWeighted(frame_GFP_mask_col,alpha,frame_GFP_mask_col,beta,0.0,frame_GFP_mask_col);
+        frame_GFP_mask_col_acc = frame_GFP_mask_col_acc*0.985+ frame_GFP_mask_col;
+       // cv::accumulate(frame_GFP_mask_col,frame_GFP_mask_col_acc);
+
+        //cv::accumulate(frame_GFP_mask_col,frame_GFP_mask_col);
+        //frame_GFP_mask_col = frame_GFP_mask_col*0.90;
 
 
 
         //frame_out.copyTo(frame_out,frame_GFP_mask)
         //frame_GFP_mask.copyTo();
-
-        float alpha = 0.5;
-        float beta = ( 1.0 - alpha );
-        cv::addWeighted( frame_GFP_mask_col, alpha, frame_live, beta, 0.0, frame_out);
+        alpha = 0.5;
+        cv::addWeighted( frame_GFP_mask_col_acc, alpha, frame_live, beta, 0.0, frame_out);
 
         //frame_live.copyTo(frame_out,frame_MOG);
         //frame_live.copyTo(frame_out);
