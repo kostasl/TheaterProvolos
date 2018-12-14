@@ -12,6 +12,8 @@
 #include "opencv2/core/utility.hpp"
 
 
+#define new_max(x,y) ((x) >= (y)) ? (x) : (y)
+#define new_min(x,y) ((x) <= (y)) ? (x) : (y)
 
 using std::cout;
 using std::endl;
@@ -163,13 +165,13 @@ static void init_opengl(int w, int h) {
 
 cv::Ptr<cv::BackgroundSubtractorMOG2> pMOG2; //MOG2 Background subtractor
 
-
+cv::RNG rng( 0xFFFFFFFF );
 int main(int argc, char **argv)
 {
-    if (argc != 2) {
-        cout << "Usage: " << argv[0] << "<path_to_video_file>" << endl;
-        exit(EXIT_FAILURE);
-    }
+   // if (argc != 2) {
+   //     cout << "Usage: " << argv[0] << "<path_to_video_file>" << endl;
+   //     exit(EXIT_FAILURE);
+   // }
 
     //cv::VideoCapture capture(argv[1]);
     cv::VideoCapture capture(0);
@@ -201,7 +203,7 @@ int main(int argc, char **argv)
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    window = glfwCreateWindow(window_width, window_height, "Simple example", NULL, NULL);
+    window = glfwCreateWindow(window_width, window_height, "On Fire Lab", NULL, NULL);
     if (!window) {
         glfwTerminate();
         exit(EXIT_FAILURE);
@@ -230,7 +232,7 @@ int main(int argc, char **argv)
 
 
     //Doesn't matter if cuda FLAG is enabled
-    int MOGhistory = 130;
+    int MOGhistory = 30;
     float gdMOGBGRatio = 0.9f;
     pMOG2 =  cv::createBackgroundSubtractorMOG2(MOGhistory, 20,false);
 
@@ -256,13 +258,13 @@ int main(int argc, char **argv)
         }
 
 
-        pMOG2->apply(frame_live,frame_MOG,0.05);
+        //pMOG2->apply(frame_live,frame_MOG,0.05);
         video_end_time = glfwGetTime();
 
-        if (frame_MOG.depth() != CV_8U)
-            cv::cvtColor( frame_MOG, frame_out, cv::COLOR_GRAY2BGR );
-        else
-            frame_MOG.copyTo(frame_out);
+        //if (frame_MOG.depth() != CV_8U)
+        //    cv::cvtColor( frame_MOG, frame_out, cv::COLOR_GRAY2BGR );
+        //else
+        //    frame_MOG.copyTo(frame_out);
 
         //frame_live.copyTo(frame_out,frame_MOG);
         frame_live.copyTo(frame_out);
@@ -284,17 +286,25 @@ int main(int argc, char **argv)
             cv::cvtColor( frame_live, frame_live_grey, cv::COLOR_BGR2GRAY );
             cv::cvtColor( frame_live_prev, frame_live_prev_grey, cv::COLOR_BGR2GRAY );
             //img2.copyTo(img2OriginalC);
-             cv::calcOpticalFlowFarneback(frame_live_grey, frame_live_prev_grey, frame_OptFlow, .4, 1, 12, 2, 8, 1.2, 0);
+             cv::calcOpticalFlowFarneback(frame_live_grey, frame_live_prev_grey, frame_OptFlow, .5, 1, 50, 1, 3, 1.2, 0);
 
-             for (int y = 0; y < frame_live_prev_grey.rows; y += 5) {
-                         for (int x = 0; x < frame_live_prev_grey.cols; x += 5)
+             for (int y = 0; y < frame_live_prev_grey.rows; y += 50) {
+                         for (int x = 0; x < frame_live_prev_grey.cols; x += 50)
                          {
                              // get the flow from y, x position * 3 for better visibility
-                             const cv::Point2f flowatxy = frame_OptFlow.at<cv::Point2f>(y, x) * 1;
+                             const cv::Point2f flowatxy = frame_OptFlow.at<cv::Point2f>(y, x) *10;
                              // draw line at flow direction
-                             cv::line(frame_out, cv::Point(x, y), cv::Point(cvRound(x + flowatxy.x), cvRound(y + flowatxy.y)), cv::Scalar(255, 0, 0));
-                             // draw initial point
-                             cv::circle(frame_out, cv::Point(x, y), 1, cv::Scalar(0, 0, 0), -1);
+                             if (cv::norm(flowatxy) > 20 ){
+                                 int colRedShift = rng.uniform(100, new_min(100,new_min((int)cv::norm(flowatxy), 200)) );
+                                 int colRadShift = rng.uniform(3, new_min((int)cv::norm(flowatxy)/2, 10) );
+
+                                    cv::arrowedLine(frame_out, cv::Point(x, y),
+                                                    cv::Point(cvRound(x + flowatxy.x), cvRound(y + flowatxy.y)),
+                                                    cv::Scalar(0, 50, 55+colRedShift,50),4);
+                                    // draw initial point
+
+                                    cv::circle(frame_out, cv::Point(x, y), colRadShift, cv::Scalar(0, 30, 55+colRedShift,30), -1);
+                                }
                          }
                }
 
@@ -310,7 +320,7 @@ int main(int argc, char **argv)
         ++frame_count;
 
         frame_out.copyTo(frame_live_prev);
-        lock_frame_rate(fps);
+       // lock_frame_rate(fps);
     }
 
     cout << "Total video time: " << video_end_time - video_start_time << " seconds" << endl;
