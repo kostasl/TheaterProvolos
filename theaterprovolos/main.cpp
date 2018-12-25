@@ -33,6 +33,7 @@ double frame_start_time, frame_end_time, frame_draw_time;
 
 
 
+
 // Function turn a cv::Mat into a texture, and return the texture ID as a GLuint for use
 static GLuint matToTexture(const cv::Mat &mat, GLenum minFilter, GLenum magFilter, GLenum wrapFilter) {
     // Generate a number for our textureID's unique handle
@@ -172,6 +173,7 @@ static void init_opengl(int w, int h) {
 
 
 cv::Ptr<cv::BackgroundSubtractorMOG2> pMOG2; //MOG2 Background subtractor
+cv::Mat kernelDilateMOGMask;
 
 cv::RNG rng( 0xFFFFFFFF );
 int main(int argc, char **argv)
@@ -181,6 +183,8 @@ int main(int argc, char **argv)
    //     cout << "Usage: " << argv[0] << "<path_to_video_file>" << endl;
    //     exit(EXIT_FAILURE);
    // }
+
+   kernelDilateMOGMask = cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(5,7),cv::Point(-1,-1));
 
     //cv::VideoCapture capture(argv[1]);
     cv::VideoCapture capture(0);
@@ -250,7 +254,7 @@ int main(int argc, char **argv)
     pMOG2->setNMixtures(20);
     pMOG2->setBackgroundRatio(gdMOGBGRatio); ///
 
-    cv::Mat frame_live,frame_live_prev,frame_MOG,frame_out;
+    cv::Mat frame_live,frame_live_prev,frame_MOG,frame_MOG_col,frame_out;
     cv::Mat frame_live_grey,frame_live_prev_grey,frame_OptFlow,frame_out_HSV;
     cv::Mat frame_GFP_mask,frame_GFP_mask_col,frame_GFP_mask_col_acc;
 
@@ -280,7 +284,9 @@ int main(int argc, char **argv)
         //    frame_MOG.copyTo(frame_out);
 
         cv::cvtColor( frame_live, frame_out_HSV, cv::COLOR_BGR2HSV );
-        cv::inRange(frame_out_HSV,cv::Scalar(50,0,170,0),cv::Scalar(150,255,255),frame_GFP_mask);
+        cv::inRange(frame_out_HSV,cv::Scalar(70,100,180),cv::Scalar(100,255,255),frame_GFP_mask);
+
+
 
 
         cv::bitwise_and(frame_MOG,frame_GFP_mask,frame_GFP_mask);
@@ -290,14 +296,15 @@ int main(int argc, char **argv)
             frame_GFP_mask_col_acc = cv::Mat::zeros(frame_GFP_mask_col.rows,frame_GFP_mask_col.cols,frame_GFP_mask_col.type() );
 
 
-        float alpha = 0.8;
+        float alpha = 0.85;
         float beta = ( 1.0 - alpha );
 
 
 
         frame_GFP_mask_col.setTo(cv::Scalar(0,0,250,100),frame_GFP_mask);
         //cv::addWeighted(frame_GFP_mask_col,alpha,frame_GFP_mask_col,beta,0.0,frame_GFP_mask_col);
-        frame_GFP_mask_col_acc = frame_GFP_mask_col_acc*0.97+ frame_GFP_mask_col;
+        frame_GFP_mask_col_acc = frame_GFP_mask_col_acc*0.95+ frame_GFP_mask_col;
+        cv::dilate(frame_GFP_mask_col_acc,frame_GFP_mask_col_acc,kernelDilateMOGMask,cv::Point(-1,-1),1); //Dilate
        // cv::accumulate(frame_GFP_mask_col,frame_GFP_mask_col_acc);
 
         //cv::accumulate(frame_GFP_mask_col,frame_GFP_mask_col);
@@ -307,9 +314,10 @@ int main(int argc, char **argv)
 
         //frame_out.copyTo(frame_out,frame_GFP_mask)
         //frame_GFP_mask.copyTo();
-        alpha = 0.8;
-        beta = 0.8;
-        cv::addWeighted( frame_GFP_mask_col_acc, alpha, frame_live, beta, 0.0, frame_out);
+        //alpha = 0.8;
+        //beta = 0.8;
+         cv::cvtColor( frame_MOG, frame_MOG_col, cv::COLOR_GRAY2BGR );
+        cv::addWeighted( frame_GFP_mask_col_acc, alpha, frame_MOG_col, beta, 0.0, frame_out);
 
         //frame_live.copyTo(frame_out,frame_MOG);
         //frame_live.copyTo(frame_out);

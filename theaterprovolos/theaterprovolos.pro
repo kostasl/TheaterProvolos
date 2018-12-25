@@ -3,6 +3,15 @@
 ### sudo apt-get install libglew-dev
 ### sudo apt-get install libglm-dev
 ### sudo apt-get install libsoil-dev
+##SOIL
+#First download the SOIL.h header file from its website
+#http://www.lonesock.net/soil.html
+#Place the header file in your project directory and put the line
+#in your project file. After that you have to install the soil library to use -lSOIL. To install the library use the command
+# sudo apt-get install libsoil-dev
+
+
+
 QT -= gui
 
 CONFIG += c++11 console
