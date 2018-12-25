@@ -1,76 +1,39 @@
-/// \title theaterprovolos an augmented reality for a fun onstage perfomance
-/// made for 1028 Xmas party as KCL, CDN Meyer Lab's.
-/// It takes images from a camera, and augments them with graphics - We are trying to
-/// show off our mutants superpowers - Its all science fiction until someone makes it a reality
+/// \brief Made for TheaterProvolos 2018 Xmas Party at KCL CDN, an realtime processesor of camera input that augments with effects.
+///  the code is actually modified sample code on how to display images using opengl. I then use some basic OpenCV processing to track Green Colour and add a red trace
 ///
-///I used the breakout game as base from which to create OpenGL sprites and graphics
-/// OpenCV is used to obtain and track an actors motion
-/// \author Kostas Lagogiannis 2018
-
-
-/*******************************************************************
-/// Using the breakout game example combined with opencv to project graphics features
-/// to locations observed by camera in realtime
-///
-** This code is part of Breakout.
-**
-** Breakout is free software: you can redistribute it and/or modify
-** it under the terms of the CC BY 4.0 license as published by
-** Creative Commons, either version 4 of the License, or (at your
-** option) any later version.
-**
-**
-**
-******************************************************************/
-/// \notes Then it should be a matter of rendering some rectangle or a box (or whatever you wish to locate using OpenCV) -
-/// there are plenty of tutorials for that, and then copying the rendered data using the glReadPixels()
-/// function to client memory and passing that to OpenCV
-///
-///
-#include <QCoreApplication>
+/// \author Kostas Lagogiannis - 2018
+/// \notes I intend to make it so Particles are thrown in reponse to tracked motion.
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
-
-#define GLEW_STATIC
+#include <iostream>
+#include <QString>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-
-#include "game.h"
-#include "resource_manager.h"
-
-///OpenCV
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 #include "opencv2/core/utility.hpp"
 
 
-// GLFW function declerations
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
-
-// The Width of the screen
-const GLuint SCREEN_WIDTH = 1280;
-// The height of the screen
-const GLuint SCREEN_HEIGHT = 768;
-
-Game Breakout (SCREEN_WIDTH, SCREEN_HEIGHT);
-
+#define new_max(x,y) ((x) >= (y)) ? (x) : (y)
+#define new_min(x,y) ((x) <= (y)) ? (x) : (y)
 
 using std::cout;
 using std::endl;
 
-int window_width  = SCREEN_WIDTH;
-int window_height = SCREEN_HEIGHT;
+int window_width  = 640;
+int window_height = 480;
 
 // Frame counting and limiting
 int    frame_count = 0;
 double frame_start_time, frame_end_time, frame_draw_time;
 
-///// For Drawing Frames On OPENGL //
-/// Function turn a cv::Mat into a texture, and return the texture ID as a GLuint for use
+
+
+// Function turn a cv::Mat into a texture, and return the texture ID as a GLuint for use
 static GLuint matToTexture(const cv::Mat &mat, GLenum minFilter, GLenum magFilter, GLenum wrapFilter) {
     // Generate a number for our textureID's unique handle
     GLuint textureID;
@@ -134,11 +97,11 @@ static void error_callback(int error, const char* description) {
     fprintf(stderr, "Error: %s\n", description);
 }
 
-//static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-//    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-//        glfwSetWindowShouldClose(window, GLFW_TRUE);
-//    }
-//}
+static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
+    }
+}
 
 static void resize_callback(GLFWwindow* window, int new_width, int new_height) {
     glViewport(0, 0, window_width = new_width, window_height = new_height);
@@ -205,131 +168,215 @@ static void init_opengl(int w, int h) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear the window
 }
 
-/////
 
 
 
-using namespace cv;
-int main(int argc, char *argv[])
+cv::Ptr<cv::BackgroundSubtractorMOG2> pMOG2; //MOG2 Background subtractor
+
+cv::RNG rng( 0xFFFFFFFF );
+int main(int argc, char **argv)
 {
+    QString frameNumberString;
+   // if (argc != 2) {
+   //     cout << "Usage: " << argv[0] << "<path_to_video_file>" << endl;
+   //     exit(EXIT_FAILURE);
+   // }
 
+    //cv::VideoCapture capture(argv[1]);
+    cv::VideoCapture capture(0);
+    //cv::VideoCapture capture("/home/kostasl/nextcloud/tomFlu.mp4");
+    if (!capture.isOpened()) {
+        cout << "Cannot open video: " << argv[1] << endl;
+        exit(EXIT_FAILURE);
+    }
 
+    double fps = 0.0;
+    fps = capture.get(CV_CAP_PROP_FPS);
+    if (fps != fps) { // NaN
+        fps = 25.0;
+    }
 
-    QCoreApplication a(argc, argv);
+    cout << "FPS: " << fps << endl;
 
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+    window_width = capture.get(CV_CAP_PROP_FRAME_WIDTH);
+    window_height = capture.get(CV_CAP_PROP_FRAME_HEIGHT);
+    cout << "Video width: " << window_width << endl;
+    cout << "Video height: " << window_height << endl;
 
-    GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Breakout", nullptr, nullptr);
-    glfwMakeContextCurrent(window);
+    GLFWwindow* window;
 
-    //glfwSwapInterval(1); //KL
+    glfwSetErrorCallback(error_callback);
 
-    glewExperimental = GL_TRUE;
-    glewInit();
-    glGetError(); // Call it once to catch glewInit() bug, all other errors are now from our application.
+    if (!glfwInit()) {
+        exit(EXIT_FAILURE);
+    }
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    window = glfwCreateWindow(window_width, window_height, "On Fire Lab", NULL, NULL);
+    if (!window) {
+        glfwTerminate();
+        exit(EXIT_FAILURE);
+    }
 
     glfwSetKeyCallback(window, key_callback);
+    glfwSetWindowSizeCallback(window, resize_callback);
 
-    // OpenGL configuration
-    glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    glfwMakeContextCurrent(window);
 
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glfwSwapInterval(1);
 
-    // Initialize game
-    Breakout.Init();
-
-    // DeltaTime variables
-    GLfloat deltaTime = 0.0f;
-    GLfloat lastFrame = 0.0f;
-
-    // Start Game within Menu State
-    Breakout.State = GAME_ACTIVE;
-
-////
-    VideoCapture cap(0); // open the default camera
-       if(!cap.isOpened())  // check if we succeeded
-           return -1;
-
-       Mat edges;
-      // cv::namedWindow("edges",CV_WINDOW_NORMAL);
-       //cv::waitKey(1);
+    //  Initialise glew (must occur AFTER window creation or glew will error)
+    GLenum err = glewInit();
+    if (GLEW_OK != err)
+    {
+        cout << "GLEW initialisation error: " << glewGetErrorString(err) << endl;
+        exit(-1);
+    }
+    cout << "GLEW okay - using version: " << glewGetString(GLEW_VERSION) << endl;
 
     init_opengl(window_width, window_height);
 
-    while (!glfwWindowShouldClose(window))
-    {
-
-        Mat frame;
-        cap.read(frame); // get a new frame from camera
-        cv::write("\home\kostasl\xxx.png",)
-        //cvtColor(frame, edges, COLOR_BGR2GRAY);
-        //GaussianBlur(edges, edges, Size(7,7), 1.5, 1.5);
-        //Canny(edges, edges, 0, 30, 3);
-        //imshow("edges", frame);
-        //cv::waitKey(1);
-        //video_end_time = glfwGetTime();
+    double video_start_time = glfwGetTime();
+    double video_end_time = 0.0;
 
 
-        // Calculate delta time
-        GLfloat currentFrame = glfwGetTime();
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
+    //Doesn't matter if cuda FLAG is enabled
+    int MOGhistory = 30;
+    float gdMOGBGRatio = 0.9f;
+    pMOG2 =  cv::createBackgroundSubtractorMOG2(MOGhistory, 20,false);
 
-        //deltaTime = 0.001f;
-        // Manage user input
-       // Breakout.ProcessInput(deltaTime);
+    pMOG2->setHistory(MOGhistory);
+    pMOG2->setNMixtures(20);
+    pMOG2->setBackgroundRatio(gdMOGBGRatio); ///
 
-        // Update Game state
-        //Breakout.Update(deltaTime);
+    cv::Mat frame_live,frame_live_prev,frame_MOG,frame_out;
+    cv::Mat frame_live_grey,frame_live_prev_grey,frame_OptFlow,frame_out_HSV;
+    cv::Mat frame_GFP_mask,frame_GFP_mask_col,frame_GFP_mask_col_acc;
 
-        // Render
-        //glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
-        //glClear(GL_COLOR_BUFFER_BIT);
+    std::vector<cv::KeyPoint> vKpt_next;
+    std::vector<cv::Point2f> vpt_next,vpt_current,vpt_motion;
+    std::vector<uchar> voutStatus;
+    // L1 distance between patches around the original and a moved point, divided by number of pixels in a window, is used as a error measure.
+    std::vector<float>    voutError;
 
-        draw_frame(frame);
+    vpt_current.push_back(cv::Point2f(400,10));
 
-        //glColor3f(1.0f, 0.2f, 0.2f);
-        //glRectf(10, 190, 10 + 100, 290);
+    while (!glfwWindowShouldClose(window)) {
+        frame_start_time = glfwGetTime();
+        if (!capture.read(frame_live)) {
+            cout << "Cannot grab a frame." << endl;
+            break;
+        }
 
-        Breakout.Render();
 
-        //glutSwapBuffers();
+
+        pMOG2->apply(frame_live,frame_MOG,0.08);
+        video_end_time = glfwGetTime();
+
+        //if (frame_MOG.depth() != CV_8U)
+        //    cv::cvtColor( frame_MOG, frame_out, cv::COLOR_GRAY2BGR );
+        //else
+        //    frame_MOG.copyTo(frame_out);
+
+        cv::cvtColor( frame_live, frame_out_HSV, cv::COLOR_BGR2HSV );
+        cv::inRange(frame_out_HSV,cv::Scalar(50,0,170,0),cv::Scalar(150,255,255),frame_GFP_mask);
+
+
+        cv::bitwise_and(frame_MOG,frame_GFP_mask,frame_GFP_mask);
+        cv::cvtColor( frame_GFP_mask, frame_GFP_mask_col, cv::COLOR_GRAY2BGR );
+
+        if (frame_GFP_mask_col_acc.empty())
+            frame_GFP_mask_col_acc = cv::Mat::zeros(frame_GFP_mask_col.rows,frame_GFP_mask_col.cols,frame_GFP_mask_col.type() );
+
+
+        float alpha = 0.8;
+        float beta = ( 1.0 - alpha );
+
+
+
+        frame_GFP_mask_col.setTo(cv::Scalar(0,0,250,100),frame_GFP_mask);
+        //cv::addWeighted(frame_GFP_mask_col,alpha,frame_GFP_mask_col,beta,0.0,frame_GFP_mask_col);
+        frame_GFP_mask_col_acc = frame_GFP_mask_col_acc*0.97+ frame_GFP_mask_col;
+       // cv::accumulate(frame_GFP_mask_col,frame_GFP_mask_col_acc);
+
+        //cv::accumulate(frame_GFP_mask_col,frame_GFP_mask_col);
+        //frame_GFP_mask_col = frame_GFP_mask_col*0.90;
+
+
+
+        //frame_out.copyTo(frame_out,frame_GFP_mask)
+        //frame_GFP_mask.copyTo();
+        alpha = 0.8;
+        beta = 0.8;
+        cv::addWeighted( frame_GFP_mask_col_acc, alpha, frame_live, beta, 0.0, frame_out);
+
+        //frame_live.copyTo(frame_out,frame_MOG);
+        //frame_live.copyTo(frame_out);
+
+        //Calc Optic Flow for each food item
+        if (frame_count > MOGhistory)
+        {
+            //cv::calcOpticalFlowPyrLK(frame_live_prev,frame_out,vpt_current,vpt_next,voutStatus,voutError,cv::Size(51,51),3);
+//            for (int i=0;i<(int)vpt_next.size() && i< 100;i++)
+//            {
+//                if (!voutStatus.at(i))
+//                    continue; //ignore bad point
+//                vpt_motion.push_back(vpt_next.at(i));
+//            }
+//            cv::KeyPoint::convert(vpt_motion,vKpt_next);
+//            cv::drawKeypoints(frame_out,vKpt_next,frame_out,CV_RGB(255,30,30),cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+
+            /////Diffusive Optic Flow -- Big Lag
+//            cv::cvtColor( frame_live, frame_live_grey, cv::COLOR_BGR2GRAY );
+//            cv::cvtColor( frame_live_prev, frame_live_prev_grey, cv::COLOR_BGR2GRAY );
+//            //img2.copyTo(img2OriginalC);
+//             cv::calcOpticalFlowFarneback(frame_live_grey, frame_live_prev_grey, frame_OptFlow, .5, 1, 50, 1, 3, 1.2, 0);
+
+//             for (int y = 0; y < frame_live_prev_grey.rows; y += 50) {
+//                         for (int x = 0; x < frame_live_prev_grey.cols; x += 50)
+//                         {
+//                             // get the flow from y, x position * 3 for better visibility
+//                             const cv::Point2f flowatxy = frame_OptFlow.at<cv::Point2f>(y, x) *10;
+//                             // draw line at flow direction
+//                             if (cv::norm(flowatxy) > 10 ){
+//                                 int colRedShift = rng.uniform(100, new_min(100,new_min((int)cv::norm(flowatxy), 200)) );
+//                                 int colRadShift = rng.uniform(3, new_min((int)cv::norm(flowatxy)/2, 10) );
+
+//                                    cv::arrowedLine(frame_out, cv::Point(x, y),
+//                                                    cv::Point(cvRound(x + flowatxy.x), cvRound(y + flowatxy.y)),
+//                                                    cv::Scalar(0, 50, 55+colRedShift,50),4);
+//                                    // draw initial point
+
+//                                    cv::circle(frame_out, cv::Point(x, y), colRadShift, cv::Scalar(0, 30, 55+colRedShift,30), -1);
+//                                }
+//                         }
+//               }
+
+
+            //Update the optic flow key points
+            vpt_current =  vpt_motion;
+         }
+         draw_frame(frame_out);
+
+
         glfwSwapBuffers(window);
         glfwPollEvents();
-        //lock_frame_rate(fps);
 
+        ++frame_count;
+
+        frame_out.copyTo(frame_live_prev);
+
+        frameNumberString = QString("%1").arg(frame_count, 5, 10, QChar('0'));
+       // lock_frame_rate(fps);
+       // cv::imwrite(QString(frameNumberString+".png").toStdString(), frame_out);
     }
 
+    cout << "Total video time: " << video_end_time - video_start_time << " seconds" << endl;
 
-
-    // Delete all resources as loaded using the resource manager
-    ResourceManager::Clear();
-
+    capture.release();
+    glfwDestroyWindow(window);
     glfwTerminate();
-    //return 0;
 
-    return a.exec();
+    exit(EXIT_SUCCESS);
 }
-
-
-
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
-{
-    // When a user presses the escape key, we set the WindowShouldClose property to true, closing the application
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GL_TRUE);
-    if (key >= 0 && key < 1024)
-    {
-        if (action == GLFW_PRESS)
-            Breakout.Keys[key] = GL_TRUE;
-        else if (action == GLFW_RELEASE)
-            Breakout.Keys[key] = GL_FALSE;
-    }
-}
-
